@@ -1,52 +1,57 @@
-import puppeteer from 'puppeteer-core';
-import chrome from '@sparticuz/chromium';
-
 export default async function handler(req, res) {
-  // ✅ Configuration CORS
-  res.setHeader("Access-Control-Allow-Origin", "*"); // Ou "https://ultracvpro.online" pour plus de sécurité
+  // Configuration CORS
+  res.setHeader("Access-Control-Allow-Origin", "*"); // ou ton domaine précis
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // ✅ Gestion du preflight
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
+  if (req.method !== 'POST') {
+    res.status(405).send('Method Not Allowed');
+    return;
+  }
+
+  const { html } = req.body;
+  if (!html) {
+    res.status(400).send('Missing HTML content');
+    return;
+  }
+
   try {
-    if (req.method !== 'POST') {
-      res.status(405).send('Method Not Allowed');
-      return;
+    const browserlessToken = process.env.BROWSERLESS_TOKEN;
+    if (!browserlessToken) {
+      throw new Error('BROWSERLESS_TOKEN is not defined');
     }
 
-    const { html } = req.body;
-    if (!html) {
-      res.status(400).send('Missing HTML content');
-      return;
+    const response = await fetch(`https://chrome.browserless.io/pdf?token=${browserlessToken}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        html,
+        options: {
+          format: 'A4',
+          printBackground: true,
+          margin: { top: '0cm', bottom: '0cm', left: '0cm', right: '0cm' }
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Browserless API error:', errorText);
+      throw new Error(`Browserless error: ${errorText}`);
     }
 
-    const browser = await puppeteer.launch({
-      args: chrome.args,
-      executablePath: await chrome.executablePath(),
-      headless: true,
-    });
-
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '0', bottom: '0', left: '0', right: '0' }
-    });
-
-    await browser.close();
+    const pdfBuffer = await response.arrayBuffer();
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="cv-ultracvpro.pdf"');
-    res.status(200).end(pdfBuffer);
+    res.status(200).end(Buffer.from(pdfBuffer));
 
   } catch (error) {
-    console.error("Error generating PDF:", error);
+    console.error("Error generating PDF:", error.message || error);
     res.status(500).send('Error generating PDF');
   }
 }
