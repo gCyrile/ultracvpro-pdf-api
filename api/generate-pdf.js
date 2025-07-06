@@ -1,18 +1,14 @@
 import puppeteer from 'puppeteer-core';
 import chrome from '@sparticuz/chromium';
-import { NextResponse } from 'next/server';
 
-export const config = {
-  runtime: 'edge',
-};
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405 });
+      res.status(405).send('Method Not Allowed');
+      return;
     }
 
-    const { html } = await req.json();
+    const { html } = req.body;
 
     const browser = await puppeteer.launch({
       args: chrome.args,
@@ -31,16 +27,12 @@ export default async function handler(req) {
 
     await browser.close();
 
-    return new Response(pdfBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename="cv-ultracvpro.pdf"'
-      }
-    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="cv-ultracvpro.pdf"');
+    res.status(200).end(pdfBuffer);
 
   } catch (error) {
     console.error(error);
-    return new Response('Error generating PDF', { status: 500 });
+    res.status(500).send('Error generating PDF');
   }
 }
