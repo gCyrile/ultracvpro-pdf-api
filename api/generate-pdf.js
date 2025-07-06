@@ -1,3 +1,5 @@
+// /api/generate-pdf.js (Next.js API route)
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
@@ -11,7 +13,8 @@ export default async function handler(req, res) {
 
   try {
     const browserlessToken = process.env.BROWSERLESS_TOKEN;
-    if (!browserlessToken) throw new Error("BROWSERLESS_TOKEN is not defined");
+    if (!browserlessToken)
+      throw new Error("BROWSERLESS_TOKEN is not defined");
 
     const response = await fetch(
       `https://production-sfo.browserless.io/pdf?token=${browserlessToken}`,
@@ -36,6 +39,8 @@ export default async function handler(req, res) {
     }
 
     const pdfBuffer = await response.arrayBuffer();
+
+    console.log("PDF Buffer length:", pdfBuffer.byteLength);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
