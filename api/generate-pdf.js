@@ -2,6 +2,16 @@ import puppeteer from 'puppeteer-core';
 import chrome from '@sparticuz/chromium';
 
 export default async function handler(req, res) {
+  // ✅ Configuration CORS
+  res.setHeader("Access-Control-Allow-Origin", "https://ultracvpro.online"); // Ou "https://ultracvpro.online" pour plus de sécurité
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // ✅ Gestion du preflight
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   try {
     if (req.method !== 'POST') {
       res.status(405).send('Method Not Allowed');
@@ -9,6 +19,10 @@ export default async function handler(req, res) {
     }
 
     const { html } = req.body;
+    if (!html) {
+      res.status(400).send('Missing HTML content');
+      return;
+    }
 
     const browser = await puppeteer.launch({
       args: chrome.args,
@@ -32,7 +46,7 @@ export default async function handler(req, res) {
     res.status(200).end(pdfBuffer);
 
   } catch (error) {
-    console.error(error);
+    console.error("Error generating PDF:", error);
     res.status(500).send('Error generating PDF');
   }
 }
