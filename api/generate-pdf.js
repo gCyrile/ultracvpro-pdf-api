@@ -3,7 +3,7 @@ import chrome from '@sparticuz/chromium';
 
 export default async function handler(req, res) {
   // ✅ Configuration CORS
-  res.setHeader("Access-Control-Allow-Origin", "https://ultracvpro.online"); // Ou "https://ultracvpro.online" pour plus de sécurité
+  res.setHeader("Access-Control-Allow-Origin", "*"); // Ou "https://ultracvpro.online" pour plus de sécurité
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
